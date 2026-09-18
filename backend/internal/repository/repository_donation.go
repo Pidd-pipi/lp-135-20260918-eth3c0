@@ -4,8 +4,10 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/givetrack/givetrack/internal/constants"
 	"github.com/givetrack/givetrack/internal/model"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // DonationRepository 捐赠数据访问。
@@ -36,6 +38,20 @@ func (r *DonationRepository) FindByID(id uint) (*model.Donation, error) {
 	return &d, nil
 }
 
+// FindByIDForUpdate 按主键查询捐赠并加行锁，须在事务中调用。
+// 用于退款申请/审核串行化，防止同一笔捐赠的并发退款操作。
+func (r *DonationRepository) FindByIDForUpdate(id uint) (*model.Donation, error) {
+	var d model.Donation
+	err := r.db.Clauses(clause.Locking{Strength: "UPDATE"}).First(&d, id).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("find donation for update: %w", err)
+	}
+	return &d, nil
+}
+
 // ListByProject 项目捐赠记录（成功支付，最新 20 条）。
 func (r *DonationRepository) ListByProject(projectID uint, limit int) ([]model.Donation, error) {
 	var list []model.Donation
@@ -46,7 +62,7 @@ func (r *DonationRepository) ListByProject(projectID uint, limit int) ([]model.D
 	return list, nil
 }
 
-// ListByUser 用户捐赠记录（分页）。
+// ListByUser 用户捐赠记录（分页）。退款状态由 service 层显式挂载最新一条。
 func (r *DonationRepository) ListByUser(userID uint, page, pageSize int) ([]model.Donation, int64, error) {
 	var list []model.Donation
 	var total int64
@@ -59,6 +75,21 @@ func (r *DonationRepository) ListByUser(userID uint, page, pageSize int) ([]mode
 		return nil, 0, fmt.Errorf("list donations by user: %w", err)
 	}
 	return list, total, nil
+}
+
+// MarkRefunded 将仍为成功状态的捐赠标记为已退款并作废凭证。
+// 通过条件更新保证同一笔捐赠只会被退款一次（并发审核时只有一个事务影响行数为 1）。
+func (r *DonationRepository) MarkRefunded(id uint) (int64, error) {
+	res := r.db.Model(&model.Donation{}).
+		Where("id = ? AND payment_status = ?", id, constants.PaymentSuccess).
+		Updates(map[string]interface{}{
+			"payment_status": constants.PaymentRefunded,
+			"certificate_no": "",
+		})
+	if res.Error != nil {
+		return 0, fmt.Errorf("mark donation refunded: %w", res.Error)
+	}
+	return res.RowsAffected, nil
 }
 
 // AdminReviewRepository 审核记录数据访问。

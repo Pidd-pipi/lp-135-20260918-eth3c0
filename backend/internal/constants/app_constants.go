@@ -33,9 +33,17 @@ const (
 
 // 支付状态
 const (
-	PaymentSuccess = "success"
-	PaymentPending = "pending"
-	PaymentFailed  = "failed"
+	PaymentSuccess  = "success"
+	PaymentPending  = "pending"
+	PaymentFailed   = "failed"
+	PaymentRefunded = "refunded"
+)
+
+// 退款申请状态
+const (
+	RefundPending  = "pending"
+	RefundApproved = "approved"
+	RefundRejected = "rejected"
 )
 
 // 项目分类

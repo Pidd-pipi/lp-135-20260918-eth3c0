@@ -4,6 +4,19 @@
 
 GiveTrack 支持公益组织注册发布公益项目，平台审核通过后按助学、助老等分类展示；用户注册后选择项目捐款并生成电子凭证，项目页实时展示筹款进度与捐赠记录，项目方定期上传执行进展，个人中心可查捐赠记录与累计金额，平台提供捐款金额与服务时长公益排行榜。
 
+### 公益捐赠退款审核
+
+捐赠成功后 **24 小时内**，捐赠人可对单笔捐赠申请**全额退款**：
+
+- 同一笔捐赠同一时间只能有一个**待审核**申请；重复申请、超过 24 小时、并发审核均返回 `409 Conflict`。
+- 审核期间电子凭证**冻结展示**，但项目筹款进度与个人累计金额**暂不扣减**。
+- 管理员对每条申请只能**批准**或**驳回一次**：
+  - 批准：扣减项目已筹金额与个人累计捐赠、作废电子凭证（捐赠置为 `refunded`）；若已筹因此跌破目标，项目状态由“已完成”恢复为“募集中（approved）”。
+  - 驳回：仅更新申请状态，凭证恢复原展示，金额不变。
+- 申请被驳回后，若仍在 24 小时时限内可再次申请；批准后不可再申请。
+- 个人中心可发起申请、查看审核状态与处理意见；管理后台保留申请原因、处理意见与处理人。
+
+
 ## 快速启动（Docker Compose 一键部署，首选）
 
 ```bash
@@ -97,8 +110,11 @@ go run ./cmd/server
 | GET | /projects/org/my | 我的项目 | org |
 | GET/POST | /projects/:id/updates | 项目进展 | org |
 | POST | /donations | 捐款并生成凭证 | JWT |
-| GET | /donations/my | 我的捐赠 | JWT |
-| GET | /donations/:id/certificate | 电子凭证 | JWT |
+| GET | /donations/my | 我的捐赠（含退款状态） | JWT |
+| GET | /donations/:id/certificate | 电子凭证（退款审核中冻结，退款后作废，驳回恢复） | JWT |
+| POST | /donations/:id/refund | 24 小时内对单笔捐赠申请全额退款 | JWT |
+| GET | /donations/:id/refund | 查询某笔捐赠退款申请状态 | JWT |
+| GET | /donations/refunds | 我的退款申请列表 | JWT |
 | GET | /ranking/donation | 捐款排行榜 | - |
 | GET | /ranking/service | 服务时长排行榜 | - |
 | GET | /ranking/stats | 平台统计 | - |
@@ -106,6 +122,8 @@ go run ./cmd/server
 | POST | /admin/projects/:id/review | 项目审核 | admin |
 | GET | /admin/organizations/pending | 待审核组织 | admin |
 | POST | /admin/organizations/:id/review | 组织审核 | admin |
+| GET | /admin/refunds/pending | 待审核退款申请 | admin |
+| POST | /admin/refunds/:id/review | 退款审核（approve/reject，仅一次） | admin |
 | GET | /healthz | 存活检查 | - |
 | GET | /readyz | 就绪检查（DB ping） | - |
 

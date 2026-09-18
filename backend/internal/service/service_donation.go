@@ -19,6 +19,7 @@ type DonationService struct {
 	donationRepo *repository.DonationRepository
 	projectRepo  *repository.ProjectRepository
 	userRepo     *repository.UserRepository
+	refundRepo   *repository.RefundRepository
 	logger       *slog.Logger
 }
 
@@ -27,6 +28,7 @@ func NewDonationService(
 	donationRepo *repository.DonationRepository,
 	projectRepo *repository.ProjectRepository,
 	userRepo *repository.UserRepository,
+	refundRepo *repository.RefundRepository,
 	logger *slog.Logger,
 ) *DonationService {
 	return &DonationService{
@@ -34,6 +36,7 @@ func NewDonationService(
 		donationRepo: donationRepo,
 		projectRepo:  projectRepo,
 		userRepo:     userRepo,
+		refundRepo:   refundRepo,
 		logger:       logger,
 	}
 }
@@ -124,12 +127,35 @@ func (s *DonationService) Create(userID uint, in CreateInput) (*model.Donation, 
 	return donation, nil
 }
 
-// MyDonations 我的捐赠记录。
+// MyDonations 我的捐赠记录（显式挂载每笔捐赠最新一条退款申请状态）。
 func (s *DonationService) MyDonations(userID uint, page, pageSize int) ([]model.Donation, int64, error) {
-	return s.donationRepo.ListByUser(userID, page, pageSize)
+	list, total, err := s.donationRepo.ListByUser(userID, page, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+	if len(list) == 0 || s.refundRepo == nil {
+		return list, total, nil
+	}
+	ids := make([]uint, 0, len(list))
+	for i := range list {
+		ids = append(ids, list[i].ID)
+	}
+	latest, err := s.refundRepo.ListLatestByDonationIDs(ids)
+	if err != nil {
+		return nil, 0, err
+	}
+	latestByDonation := make(map[uint]*model.RefundApplication, len(latest))
+	for i := range latest {
+		latestByDonation[latest[i].DonationID] = &latest[i]
+	}
+	for i := range list {
+		list[i].Refund = latestByDonation[list[i].ID]
+	}
+	return list, total, nil
 }
 
 // Certificate 查询电子凭证。
+// 退款审核中冻结凭证展示；退款已批准则凭证作废；驳回则恢复展示。
 func (s *DonationService) Certificate(userID, donationID uint) (*model.Donation, error) {
 	d, err := s.donationRepo.FindByID(donationID)
 	if errors.Is(err, repository.ErrNotFound) {
@@ -140,6 +166,16 @@ func (s *DonationService) Certificate(userID, donationID uint) (*model.Donation,
 	}
 	if d.UserID != userID {
 		return nil, fmt.Errorf("forbidden: certificate belongs to another user")
+	}
+	if d.PaymentStatus == constants.PaymentRefunded {
+		return nil, fmt.Errorf("%w: 该捐赠已退款，凭证已作废", ErrRefundConflict)
+	}
+	if s.refundRepo != nil {
+		if _, ferr := s.refundRepo.FindPendingByDonationID(donationID); ferr == nil {
+			return nil, fmt.Errorf("%w: 退款审核中，凭证暂时冻结", ErrRefundConflict)
+		} else if !errors.Is(ferr, repository.ErrNotFound) {
+			return nil, ferr
+		}
 	}
 	return d, nil
 }

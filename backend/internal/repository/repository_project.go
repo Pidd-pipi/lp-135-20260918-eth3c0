@@ -4,8 +4,10 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/givetrack/givetrack/internal/constants"
 	"github.com/givetrack/givetrack/internal/model"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // ProjectRepository 项目数据访问。
@@ -39,6 +41,26 @@ func (r *ProjectRepository) FindByID(id uint) (*model.Project, error) {
 func (r *ProjectRepository) Update(p *model.Project) error {
 	if err := r.db.Save(p).Error; err != nil {
 		return fmt.Errorf("update project: %w", err)
+	}
+	return nil
+}
+
+// DeductAmount 退款批准时扣减项目已筹金额；若扣减后已筹跌破目标且项目已完成，则恢复募集中。
+// 通过行锁读取并在同一事务内更新，避免并发退款导致金额与状态错乱。
+func (r *ProjectRepository) DeductAmount(id uint, amount float64) error {
+	var p model.Project
+	if err := r.db.Clauses(clause.Locking{Strength: "UPDATE"}).First(&p, id).Error; err != nil {
+		return fmt.Errorf("lock project for refund: %w", err)
+	}
+	p.CurrentAmount -= amount
+	if p.CurrentAmount < 0 {
+		p.CurrentAmount = 0
+	}
+	if p.Status == constants.ProjectCompleted && p.CurrentAmount < p.TargetAmount {
+		p.Status = constants.ProjectApproved
+	}
+	if err := r.db.Save(&p).Error; err != nil {
+		return fmt.Errorf("deduct project amount: %w", err)
 	}
 	return nil
 }

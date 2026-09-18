@@ -96,3 +96,23 @@ CREATE TABLE IF NOT EXISTS volunteer_services (
   created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
   INDEX idx_vs_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS refund_applications (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  donation_id BIGINT UNSIGNED NOT NULL,
+  user_id BIGINT UNSIGNED NOT NULL,
+  project_id BIGINT UNSIGNED NOT NULL,
+  amount DECIMAL(14,2) NOT NULL,
+  reason VARCHAR(255) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  review_reason VARCHAR(255) DEFAULT '',
+  reviewer_id BIGINT UNSIGNED DEFAULT 0,
+  reviewed_at DATETIME(3) NULL,
+  created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  INDEX idx_refund_donation (donation_id),
+  INDEX idx_refund_user (user_id),
+  INDEX idx_refund_project (project_id),
+  INDEX idx_refund_status (status),
+  INDEX idx_refund_reviewer (reviewer_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

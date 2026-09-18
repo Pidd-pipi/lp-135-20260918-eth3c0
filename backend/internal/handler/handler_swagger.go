@@ -26,14 +26,18 @@ const swaggerJSON = `{
     "/projects/{id}/updates": { "get": { "summary": "项目进展", "tags": ["project"] }, "post": { "summary": "上传进展", "tags": ["project"] } },
     "/donations": { "post": { "summary": "捐款", "tags": ["donation"] } },
     "/donations/my": { "get": { "summary": "我的捐赠", "tags": ["donation"] } },
+    "/donations/refunds": { "get": { "summary": "我的退款申请", "tags": ["donation"] } },
     "/donations/{id}/certificate": { "get": { "summary": "电子凭证", "tags": ["donation"] } },
+    "/donations/{id}/refund": { "post": { "summary": "申请退款", "tags": ["donation"] }, "get": { "summary": "退款状态", "tags": ["donation"] } },
     "/ranking/donation": { "get": { "summary": "捐款排行", "tags": ["ranking"] } },
     "/ranking/service": { "get": { "summary": "服务时长排行", "tags": ["ranking"] } },
     "/ranking/stats": { "get": { "summary": "平台统计", "tags": ["ranking"] } },
     "/admin/projects/pending": { "get": { "summary": "待审核项目", "tags": ["admin"] } },
     "/admin/projects/{id}/review": { "post": { "summary": "审核项目", "tags": ["admin"] } },
     "/admin/organizations/pending": { "get": { "summary": "待审核组织", "tags": ["admin"] } },
-    "/admin/organizations/{id}/review": { "post": { "summary": "审核组织", "tags": ["admin"] } }
+    "/admin/organizations/{id}/review": { "post": { "summary": "审核组织", "tags": ["admin"] } },
+    "/admin/refunds/pending": { "get": { "summary": "待审核退款", "tags": ["admin"] } },
+    "/admin/refunds/{id}/review": { "post": { "summary": "审核退款", "tags": ["admin"] } }
   }
 }`
 

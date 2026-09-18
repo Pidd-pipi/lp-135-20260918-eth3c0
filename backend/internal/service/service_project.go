@@ -13,11 +13,11 @@ import (
 
 // ProjectService 项目管理服务。
 type ProjectService struct {
-	projectRepo  *repository.ProjectRepository
-	updateRepo   *repository.ProjectUpdateRepository
-	orgRepo      *repository.OrganizationRepository
-	donRepo      *repository.DonationRepository
-	logger       *slog.Logger
+	projectRepo *repository.ProjectRepository
+	updateRepo  *repository.ProjectUpdateRepository
+	orgRepo     *repository.OrganizationRepository
+	donRepo     *repository.DonationRepository
+	logger      *slog.Logger
 }
 
 func NewProjectService(projectRepo *repository.ProjectRepository, updateRepo *repository.ProjectUpdateRepository, orgRepo *repository.OrganizationRepository, donRepo *repository.DonationRepository, logger *slog.Logger) *ProjectService {

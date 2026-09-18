@@ -6,10 +6,14 @@ import (
 
 	"github.com/givetrack/givetrack/internal/model"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // ErrNotFound 哨兵错误。
 var ErrNotFound = errors.New("record not found")
+
+// ErrConflict 哨兵错误（重复提交、状态冲突等）。
+var ErrConflict = errors.New("conflict")
 
 // UserRepository 用户数据访问。
 type UserRepository struct {
@@ -58,6 +62,22 @@ func (r *UserRepository) Update(u *model.User) error {
 	return nil
 }
 
+// DeductTotalDonation 退款批准时扣减用户累计捐赠金额（行锁，防止并发退款出现负数）。
+func (r *UserRepository) DeductTotalDonation(id uint, amount float64) error {
+	var u model.User
+	if err := r.db.Clauses(clause.Locking{Strength: "UPDATE"}).First(&u, id).Error; err != nil {
+		return fmt.Errorf("lock user for refund: %w", err)
+	}
+	u.TotalDonation -= amount
+	if u.TotalDonation < 0 {
+		u.TotalDonation = 0
+	}
+	if err := r.db.Save(&u).Error; err != nil {
+		return fmt.Errorf("deduct user donation: %w", err)
+	}
+	return nil
+}
+
 // RankingTopDonation 按累计捐款金额排行。
 func (r *UserRepository) RankingTopDonation(limit int) ([]model.User, error) {
 	var list []model.User
@@ -81,9 +101,9 @@ func (r *UserRepository) RankingTopService(limit int) ([]model.User, error) {
 // Stats 平台统计。
 func (r *UserRepository) Stats() (totalUsers int64, totalDonation float64, totalServiceHours float64, err error) {
 	var u struct {
-		TotalUsers  int64
-		TotalDon    float64
-		TotalHours  float64
+		TotalUsers int64
+		TotalDon   float64
+		TotalHours float64
 	}
 	if err := r.db.Model(&model.User{}).Where("role = ?", "user").
 		Select("COUNT(*) AS total_users, COALESCE(SUM(total_donation),0) AS total_don, COALESCE(SUM(service_hours),0) AS total_hours").

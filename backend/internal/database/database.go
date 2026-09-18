@@ -45,6 +45,7 @@ func Connect(dsn string, maxOpen, maxIdle, connMaxLifetime, retryCount, retryInt
 		&model.Donation{},
 		&model.AdminReview{},
 		&model.VolunteerService{},
+		&model.RefundApplication{},
 	); err != nil {
 		return nil, fmt.Errorf("auto migrate: %w", err)
 	}

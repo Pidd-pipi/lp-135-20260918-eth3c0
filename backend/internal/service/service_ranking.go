@@ -19,13 +19,13 @@ func NewRankingService(userRepo *repository.UserRepository, logger *slog.Logger)
 
 // RankItem 排行条目。
 type RankItem struct {
-	Rank         int     `json:"rank"`
-	UserID       uint    `json:"userId"`
-	Username     string  `json:"username"`
-	RealName     string  `json:"realName"`
-	Avatar       string  `json:"avatar"`
+	Rank          int     `json:"rank"`
+	UserID        uint    `json:"userId"`
+	Username      string  `json:"username"`
+	RealName      string  `json:"realName"`
+	Avatar        string  `json:"avatar"`
 	TotalDonation float64 `json:"totalDonation"`
-	ServiceHours float64 `json:"serviceHours"`
+	ServiceHours  float64 `json:"serviceHours"`
 }
 
 // DonationRanking 捐款金额排行。
