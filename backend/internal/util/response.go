@@ -40,6 +40,8 @@ func FailError(c *gin.Context, err error) {
 		Fail(c, http.StatusUnauthorized, constants.CodeUnauthorized, err.Error())
 	case errors.Is(err, ErrForbidden):
 		Fail(c, http.StatusForbidden, constants.CodeForbidden, err.Error())
+	case errors.Is(err, ErrConflict):
+		Fail(c, http.StatusConflict, constants.CodeConflict, err.Error())
 	default:
 		Fail(c, http.StatusBadRequest, constants.CodeBadRequest, err.Error())
 	}
@@ -50,6 +52,9 @@ var ErrUnauthorized = errors.New("unauthorized")
 
 // ErrForbidden 无权限错误。
 var ErrForbidden = errors.New("forbidden")
+
+// ErrConflict 状态冲突错误（重复申请、超时申请、并发审核等）。
+var ErrConflict = errors.New("conflict")
 
 // Page 分页参数。
 type Page struct {

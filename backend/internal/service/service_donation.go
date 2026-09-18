@@ -10,6 +10,7 @@ import (
 	"github.com/givetrack/givetrack/internal/constants"
 	"github.com/givetrack/givetrack/internal/model"
 	"github.com/givetrack/givetrack/internal/repository"
+	"github.com/givetrack/givetrack/internal/util"
 	"gorm.io/gorm"
 )
 
@@ -130,6 +131,7 @@ func (s *DonationService) MyDonations(userID uint, page, pageSize int) ([]model.
 }
 
 // Certificate 查询电子凭证。
+// 退款审核中凭证冻结展示；退款批准后凭证作废，均返回冲突。
 func (s *DonationService) Certificate(userID, donationID uint) (*model.Donation, error) {
 	d, err := s.donationRepo.FindByID(donationID)
 	if errors.Is(err, repository.ErrNotFound) {
@@ -140,6 +142,12 @@ func (s *DonationService) Certificate(userID, donationID uint) (*model.Donation,
 	}
 	if d.UserID != userID {
 		return nil, fmt.Errorf("forbidden: certificate belongs to another user")
+	}
+	if d.PaymentStatus == constants.PaymentRefunded {
+		return nil, fmt.Errorf("%w: certificate has been voided due to refund", util.ErrConflict)
+	}
+	if d.Refund != nil && d.Refund.Status == constants.RefundPending {
+		return nil, fmt.Errorf("%w: certificate is frozen while refund is under review", util.ErrConflict)
 	}
 	return d, nil
 }

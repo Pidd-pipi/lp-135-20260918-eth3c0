@@ -77,6 +77,22 @@ CREATE TABLE IF NOT EXISTS donations (
   INDEX idx_donation_project (project_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS refund_applications (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  donation_id BIGINT UNSIGNED NOT NULL UNIQUE,
+  user_id BIGINT UNSIGNED NOT NULL,
+  reason TEXT NOT NULL,
+  status VARCHAR(20) DEFAULT 'pending',
+  reviewer_id BIGINT UNSIGNED DEFAULT 0,
+  review_note VARCHAR(255) DEFAULT '',
+  reviewed_at DATETIME(3) NULL,
+  created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  INDEX idx_refund_user (user_id),
+  INDEX idx_refund_status (status),
+  INDEX idx_refund_reviewer (reviewer_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS admin_reviews (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   project_id BIGINT UNSIGNED DEFAULT 0,

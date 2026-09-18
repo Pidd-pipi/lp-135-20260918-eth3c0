@@ -141,7 +141,7 @@ const ProjectDetail = () => {
                     <p className="text-gray-500 text-center py-8">暂无捐赠记录</p>
                   ) : (
                     donations.map((donation) => (
-                      <div key={donation.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div key={donation.id} className={`flex items-center justify-between p-4 bg-gray-50 rounded-lg ${donation.refundStatus === 'pending' ? 'opacity-60' : ''}`}>
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
                             <span className="text-primary-600 font-medium">
@@ -149,7 +149,12 @@ const ProjectDetail = () => {
                             </span>
                           </div>
                           <div>
-                            <div className="font-medium text-gray-900">{donation.donorName || '爱心人士'}</div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-gray-900">{donation.donorName || '爱心人士'}</span>
+                              {donation.refundStatus === 'pending' && (
+                                <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs">退款审核中·冻结</span>
+                              )}
+                            </div>
                             <div className="text-sm text-gray-500">
                               {new Date(donation.createdAt).toLocaleString()}
                             </div>

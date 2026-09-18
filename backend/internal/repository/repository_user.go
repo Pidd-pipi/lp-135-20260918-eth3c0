@@ -6,6 +6,7 @@ import (
 
 	"github.com/givetrack/givetrack/internal/model"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // ErrNotFound 哨兵错误。
@@ -56,6 +57,19 @@ func (r *UserRepository) Update(u *model.User) error {
 		return fmt.Errorf("update user: %w", err)
 	}
 	return nil
+}
+
+// FindByIDForUpdate 行级锁查询用户（须在事务内调用）。
+func (r *UserRepository) FindByIDForUpdate(id uint) (*model.User, error) {
+	var u model.User
+	err := r.db.Clauses(clause.Locking{Strength: "UPDATE"}).First(&u, id).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("find user by id for update: %w", err)
+	}
+	return &u, nil
 }
 
 // RankingTopDonation 按累计捐款金额排行。

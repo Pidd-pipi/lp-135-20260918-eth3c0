@@ -53,6 +53,16 @@ export const donationAPI = {
   createDonation: (data: any) => api.post('/donations', data),
   getMyDonations: (params?: any) => api.get('/donations/my', { params }),
   getCertificate: (id: string) => api.get(`/donations/${id}/certificate`),
+  applyRefund: (donationId: string, data: { reason: string }) =>
+    api.post(`/donations/${donationId}/refund`, data),
+};
+
+export const refundAPI = {
+  getMyRefunds: (params?: any) => api.get('/refunds/my', { params }),
+  getRefund: (id: string) => api.get(`/refunds/${id}`),
+  adminList: (params?: any) => api.get('/admin/refunds', { params }),
+  review: (id: string, data: { status: 'approved' | 'rejected'; note?: string }) =>
+    api.post(`/admin/refunds/${id}/review`, data),
 };
 
 export const rankingAPI = {

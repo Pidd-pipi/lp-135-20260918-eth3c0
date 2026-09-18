@@ -5,6 +5,8 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/givetrack/givetrack/internal/constants"
+	"github.com/givetrack/givetrack/internal/model"
 	"github.com/givetrack/givetrack/internal/service"
 	"github.com/givetrack/givetrack/internal/util"
 )
@@ -67,9 +69,19 @@ func (h *ProjectHandler) GetDetail(c *gin.Context) {
 			"message":     d.Message,
 			"createdAt":   d.CreatedAt,
 			"donorName":   donorName,
+			// 退款审核中的凭证/记录冻结展示；已退款记录不会出现在项目捐赠列表中。
+			"refundStatus": refundStatusLabel(d),
 		})
 	}
 	util.OK(c, gin.H{"project": project, "donations": donationViews, "updates": updates})
+}
+
+// refundStatusLabel 返回捐赠记录上的退款状态：pending=审核中冻结，空串=正常展示。
+func refundStatusLabel(d model.Donation) string {
+	if d.Refund != nil && d.Refund.Status == constants.RefundPending {
+		return constants.RefundPending
+	}
+	return ""
 }
 
 // Create 组织发布项目。

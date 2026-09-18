@@ -1,5 +1,7 @@
 package constants
 
+import "time"
+
 // 应用常量。
 const (
 	AppName         = "givetrack"
@@ -33,10 +35,21 @@ const (
 
 // 支付状态
 const (
-	PaymentSuccess = "success"
-	PaymentPending = "pending"
-	PaymentFailed  = "failed"
+	PaymentSuccess  = "success"
+	PaymentPending  = "pending"
+	PaymentFailed   = "failed"
+	PaymentRefunded = "refunded"
 )
+
+// 退款审核状态
+const (
+	RefundPending  = "pending"
+	RefundApproved = "approved"
+	RefundRejected = "rejected"
+)
+
+// RefundApplyWindow 捐赠成功后可申请退款的时间窗口（24 小时）。
+const RefundApplyWindow = 24 * time.Hour
 
 // 项目分类
 const (

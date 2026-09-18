@@ -4,8 +4,10 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/givetrack/givetrack/internal/constants"
 	"github.com/givetrack/givetrack/internal/model"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // DonationRepository 捐赠数据访问。
@@ -24,9 +26,16 @@ func (r *DonationRepository) Create(d *model.Donation) error {
 	return nil
 }
 
+func (r *DonationRepository) Update(d *model.Donation) error {
+	if err := r.db.Save(d).Error; err != nil {
+		return fmt.Errorf("update donation: %w", err)
+	}
+	return nil
+}
+
 func (r *DonationRepository) FindByID(id uint) (*model.Donation, error) {
 	var d model.Donation
-	err := r.db.Preload("Project").Preload("User").First(&d, id).Error
+	err := r.db.Preload("Project").Preload("User").Preload("Refund").First(&d, id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, ErrNotFound
 	}
@@ -36,22 +45,35 @@ func (r *DonationRepository) FindByID(id uint) (*model.Donation, error) {
 	return &d, nil
 }
 
-// ListByProject 项目捐赠记录（成功支付，最新 20 条）。
+// FindByIDForUpdate 行级锁查询捐赠（须在事务内调用）。
+func (r *DonationRepository) FindByIDForUpdate(id uint) (*model.Donation, error) {
+	var d model.Donation
+	err := r.db.Clauses(clause.Locking{Strength: "UPDATE"}).First(&d, id).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("find donation by id for update: %w", err)
+	}
+	return &d, nil
+}
+
+// ListByProject 项目捐赠记录（成功支付，最新 20 条；退款审核中保留展示并带冻结标记）。
 func (r *DonationRepository) ListByProject(projectID uint, limit int) ([]model.Donation, error) {
 	var list []model.Donation
-	if err := r.db.Preload("User").Where("project_id = ? AND payment_status = ?", projectID, "success").
+	if err := r.db.Preload("User").Preload("Refund").Where("project_id = ? AND payment_status = ?", projectID, "success").
 		Order("created_at DESC").Limit(limit).Find(&list).Error; err != nil {
 		return nil, fmt.Errorf("list donations by project: %w", err)
 	}
 	return list, nil
 }
 
-// ListByUser 用户捐赠记录（分页）。
+// ListByUser 用户捐赠记录（分页，含成功与已退款）。
 func (r *DonationRepository) ListByUser(userID uint, page, pageSize int) ([]model.Donation, int64, error) {
 	var list []model.Donation
 	var total int64
-	q := r.db.Model(&model.Donation{}).Preload("Project").
-		Where("user_id = ? AND payment_status = ?", userID, "success")
+	q := r.db.Model(&model.Donation{}).Preload("Project").Preload("Refund").
+		Where("user_id = ? AND payment_status IN ?", userID, []string{constants.PaymentSuccess, constants.PaymentRefunded})
 	if err := q.Count(&total).Error; err != nil {
 		return nil, 0, fmt.Errorf("count donations: %w", err)
 	}

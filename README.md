@@ -98,7 +98,10 @@ go run ./cmd/server
 | GET/POST | /projects/:id/updates | 项目进展 | org |
 | POST | /donations | 捐款并生成凭证 | JWT |
 | GET | /donations/my | 我的捐赠 | JWT |
-| GET | /donations/:id/certificate | 电子凭证 | JWT |
+| GET | /donations/:id/certificate | 电子凭证（审核中冻结/退款后作废返回 409） | JWT |
+| POST | /donations/:id/refund | 24 小时内申请全额退款 | JWT |
+| GET | /refunds/my | 我的退款申请及状态 | JWT |
+| GET | /refunds/:id | 退款申请详情 | JWT |
 | GET | /ranking/donation | 捐款排行榜 | - |
 | GET | /ranking/service | 服务时长排行榜 | - |
 | GET | /ranking/stats | 平台统计 | - |
@@ -106,6 +109,8 @@ go run ./cmd/server
 | POST | /admin/projects/:id/review | 项目审核 | admin |
 | GET | /admin/organizations/pending | 待审核组织 | admin |
 | POST | /admin/organizations/:id/review | 组织审核 | admin |
+| GET | /admin/refunds | 退款申请列表（?status=pending/approved/rejected） | admin |
+| POST | /admin/refunds/:id/review | 退款审核（approved/rejected，仅一次） | admin |
 | GET | /healthz | 存活检查 | - |
 | GET | /readyz | 就绪检查（DB ping） | - |
 

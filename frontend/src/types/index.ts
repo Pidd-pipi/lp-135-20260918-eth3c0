@@ -41,19 +41,36 @@ export interface Project {
   organization?: Organization;
 }
 
+export type RefundStatus = 'pending' | 'approved' | 'rejected';
+
+export interface RefundApplication {
+  id: string;
+  donationId: string;
+  userId: string;
+  reason: string;
+  status: RefundStatus;
+  reviewerId?: number;
+  reviewNote?: string;
+  reviewedAt?: string;
+  createdAt: string;
+  donation?: Donation;
+}
+
 export interface Donation {
   id: string;
   userId: string;
   projectId: string;
   amount: number;
   paymentMethod: 'wechat' | 'alipay' | 'bank';
-  paymentStatus: 'pending' | 'success' | 'failed';
+  paymentStatus: 'pending' | 'success' | 'failed' | 'refunded';
   certificateNo?: string;
   isAnonymous: boolean;
   message?: string;
   createdAt: string;
   project?: Project;
   donorName?: string;
+  refundStatus?: RefundStatus | '';
+  refund?: RefundApplication;
 }
 
 export interface ProjectUpdate {
